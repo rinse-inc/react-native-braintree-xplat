@@ -13,7 +13,7 @@ target 'Demo' do
   pod 'FLEX'
   pod 'InAppSettingsKit'
   pod 'iOS-Slide-Menu'
-  pod 'BraintreeDropIn', :podspec => 'BraintreeDropIn.podspec'
+  pod 'BraintreeDropIn'
 end
 
 abstract_target 'Tests' do
