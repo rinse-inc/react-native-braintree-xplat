@@ -9,11 +9,10 @@ import com.google.gson.Gson;
 import android.content.Intent;
 import android.content.Context;
 import android.app.Activity;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.braintreepayments.api.ThreeDSecure;
-import com.braintreepayments.api.PaymentRequest;
 import com.braintreepayments.api.models.PaymentMethodNonce;
-import com.braintreepayments.api.BraintreePaymentActivity;
 import com.braintreepayments.api.BraintreeFragment;
 import com.braintreepayments.api.exceptions.InvalidArgumentException;
 import com.braintreepayments.api.exceptions.BraintreeError;
@@ -24,6 +23,9 @@ import com.braintreepayments.api.PayPal;
 import com.braintreepayments.api.interfaces.PaymentMethodNonceCreatedListener;
 import com.braintreepayments.api.interfaces.BraintreeErrorListener;
 import com.braintreepayments.api.models.CardNonce;
+
+import com.braintreepayments.api.dropin.DropInRequest;
+import com.braintreepayments.api.dropin.DropInResult;
 
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -66,7 +68,7 @@ public class Braintree extends ReactContextBaseJavaModule implements ActivityEve
   @ReactMethod
   public void setup(final String token, final Callback successCallback, final Callback errorCallback) {
     try {
-      this.mBraintreeFragment = BraintreeFragment.newInstance(getCurrentActivity(), token);
+      this.mBraintreeFragment = BraintreeFragment.newInstance((AppCompatActivity) getCurrentActivity(), token);
       this.mBraintreeFragment.addListener(new BraintreeCancelListener() {
         @Override
         public void onCancel(int requestCode) {
@@ -166,17 +168,8 @@ public class Braintree extends ReactContextBaseJavaModule implements ActivityEve
     if (parameters.hasKey("company"))
       cardBuilder.company(parameters.getString("company"));
 
-    if (parameters.hasKey("countryName"))
-      cardBuilder.countryName(parameters.getString("countryName"));
-
-    if (parameters.hasKey("countryCodeAlpha2"))
-      cardBuilder.countryCodeAlpha2(parameters.getString("countryCodeAlpha2"));
-
-    if (parameters.hasKey("countryCodeAlpha3"))
-      cardBuilder.countryCodeAlpha3(parameters.getString("countryCodeAlpha3"));
-
-    if (parameters.hasKey("countryCodeNumeric"))
-      cardBuilder.countryCodeNumeric(parameters.getString("countryCodeNumeric"));
+    if (parameters.hasKey("countryCode"))
+      cardBuilder.countryCode(parameters.getString("countryCode"));
 
     if (parameters.hasKey("locality"))
       cardBuilder.locality(parameters.getString("locality"));
@@ -208,51 +201,26 @@ public class Braintree extends ReactContextBaseJavaModule implements ActivityEve
   public void paymentRequest(final ReadableMap options, final Callback successCallback, final Callback errorCallback) {
     this.successCallback = successCallback;
     this.errorCallback = errorCallback;
-    PaymentRequest paymentRequest = null;
 
-    String callToActionText = null;
-    String title = null;
-    String description = null;
-    String amount = null;
-
-    if (options.hasKey("callToActionText")) {
-      callToActionText = options.getString("callToActionText");
-    }
-
-    if (options.hasKey("title")) {
-      title = options.getString("title");
-    }
-
-    if (options.hasKey("description")) {
-      description = options.getString("description");
-    }
-
-    if (options.hasKey("amount")) {
-      amount = options.getString("amount");
-    }
-
-    if (options.hasKey("threeDSecure")) {
-      this.threeDSecureOptions = options.getMap("threeDSecure");
-    }
-
-    paymentRequest = new PaymentRequest()
-      .submitButtonText(callToActionText)
-      .primaryDescription(title)
-      .secondaryDescription(description)
-      .amount(amount)
+    DropInRequest dropInRequest = new DropInRequest()
       .clientToken(this.getToken());
 
-    (getCurrentActivity()).startActivityForResult(
-      paymentRequest.getIntent(getCurrentActivity()),
+    Activity activity = (AppCompatActivity) getCurrentActivity();
+    activity.startActivityForResult(
+      dropInRequest.getIntent(activity),
       PAYMENT_REQUEST
     );
   }
 
   @ReactMethod
   public void paypalRequest(final Callback successCallback, final Callback errorCallback) {
-    this.successCallback = successCallback;
-    this.errorCallback = errorCallback;
-    PayPal.authorizeAccount(this.mBraintreeFragment);
+    // Note: authorizeAccount is deprecated; would need to use either requestBillingAgreement or requestOneTimePayment
+    //   since we don't use PayPal will just comment out
+
+    // this.successCallback = successCallback;
+    // this.errorCallback = errorCallback;
+
+    // PayPal.authorizeAccount(this.mBraintreeFragment);
   }
 
   @Override
@@ -260,22 +228,14 @@ public class Braintree extends ReactContextBaseJavaModule implements ActivityEve
     if (requestCode == PAYMENT_REQUEST) {
       switch (resultCode) {
         case Activity.RESULT_OK:
-          PaymentMethodNonce paymentMethodNonce = data.getParcelableExtra(
-            BraintreePaymentActivity.EXTRA_PAYMENT_METHOD_NONCE
-          );
+          DropInResult result = data.getParcelableExtra(DropInResult.EXTRA_DROP_IN_RESULT);
+          PaymentMethodNonce paymentMethodNonce = result.getPaymentMethodNonce();
 
           if (this.threeDSecureOptions != null) {
             ThreeDSecure.performVerification(this.mBraintreeFragment, paymentMethodNonce.getNonce(), String.valueOf(this.threeDSecureOptions.getDouble("amount")));
           } else {
             this.successCallback.invoke(paymentMethodNonce.getNonce());
           }
-          break;
-        case BraintreePaymentActivity.BRAINTREE_RESULT_DEVELOPER_ERROR:
-        case BraintreePaymentActivity.BRAINTREE_RESULT_SERVER_ERROR:
-        case BraintreePaymentActivity.BRAINTREE_RESULT_SERVER_UNAVAILABLE:
-          this.errorCallback.invoke(
-            data.getSerializableExtra(BraintreePaymentActivity.EXTRA_ERROR_MESSAGE)
-          );
           break;
         case Activity.RESULT_CANCELED:
           this.errorCallback.invoke("USER_CANCELLATION");
