@@ -27,6 +27,8 @@ import com.braintreepayments.api.models.CardNonce;
 import com.braintreepayments.api.dropin.DropInRequest;
 import com.braintreepayments.api.dropin.DropInResult;
 
+import com.braintreepayments.cardform.view.CardForm;
+
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -202,8 +204,26 @@ public class Braintree extends ReactContextBaseJavaModule implements ActivityEve
     this.successCallback = successCallback;
     this.errorCallback = errorCallback;
 
+    String cardholderNameStatus = null;
+
+    if (options.hasKey("cardholderNameStatus")) {
+      cardholderNameStatus = options.getString("cardholderNameStatus");
+    }
+
+    if (options.hasKey("threeDSecure")) {
+      this.threeDSecureOptions = options.getMap("threeDSecure");
+    }
+
+    int cardHolderNameStatusCode = CardForm.FIELD_DISABLED;
+    if (cardholderNameStatus.equals("required")) {
+      cardHolderNameStatusCode = CardForm.FIELD_REQUIRED;
+    } else if (cardholderNameStatus.equals("optional")) {
+      cardHolderNameStatusCode = CardForm.FIELD_OPTIONAL;
+    }
+
     DropInRequest dropInRequest = new DropInRequest()
-      .clientToken(this.getToken());
+      .clientToken(this.getToken())
+      .cardholderNameStatus(cardHolderNameStatusCode);
 
     Activity activity = (AppCompatActivity) getCurrentActivity();
     activity.startActivityForResult(

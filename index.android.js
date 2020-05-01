@@ -24,10 +24,7 @@ module.exports = {
 
   showPaymentViewController(config = {}) {
     var options = {
-      callToActionText: config.callToActionText,
-      title: config.title,
-      description: config.description,
-      amount: config.amount,
+      cardholderNameStatus: config.cardholderNameStatus,
       threeDSecure: config.threeDSecure,
     };
     return new Promise(function(resolve, reject) {
