@@ -39,7 +39,7 @@ var Braintree = {
       threeDSecure: config.threeDSecure,
     };
     return new Promise(function(resolve, reject) {
-      RNBraintree.showPaymentViewController(options, function(err, nonce) {
+      RNBraintree.showPaymentViewController(function(err, nonce) {
         nonce != null ? resolve(nonce) : reject(err);
       });
     });
