@@ -7,12 +7,12 @@ import { mapParameters } from './utils';
 
 import type { CardParameters } from './types';
 
-const RCTBraintree = NativeModules.Braintree;
+const RNBraintree = NativeModules.RNBraintree;
 
 var Braintree = {
   setupWithURLScheme(token, urlscheme) {
     return new Promise(function(resolve, reject) {
-      RCTBraintree.setupWithURLScheme(token, urlscheme, function(success) {
+      RNBraintree.setupWithURLScheme(token, urlscheme, function(success) {
         success == true ? resolve(true) : reject('Invalid Token');
       });
     });
@@ -20,7 +20,7 @@ var Braintree = {
 
   setup(token) {
     return new Promise(function(resolve, reject) {
-      RCTBraintree.setup(token, function(success) {
+      RNBraintree.setup(token, function(success) {
         success == true ? resolve(true) : reject('Invalid Token');
       });
     });
@@ -39,7 +39,7 @@ var Braintree = {
       threeDSecure: config.threeDSecure,
     };
     return new Promise(function(resolve, reject) {
-      RCTBraintree.showPaymentViewController(options, function(err, nonce) {
+      RNBraintree.showPaymentViewController(options, function(err, nonce) {
         nonce != null ? resolve(nonce) : reject(err);
       });
     });
@@ -47,7 +47,7 @@ var Braintree = {
 
   showPayPalViewController() {
     return new Promise(function(resolve, reject) {
-      RCTBraintree.showPayPalViewController(function(err, nonce) {
+      RNBraintree.showPayPalViewController(function(err, nonce) {
         nonce != null ? resolve(nonce) : reject(err);
       });
     });
@@ -55,7 +55,7 @@ var Braintree = {
 
   getCardNonce(parameters: CardParameters = {}) {
     return new Promise(function(resolve, reject) {
-      RCTBraintree.getCardNonce(mapParameters(parameters), function(
+      RNBraintree.getCardNonce(mapParameters(parameters), function(
         err,
         nonce
       ) {
@@ -81,7 +81,7 @@ var Braintree = {
 
   getDeviceData(options = {}) {
     return new Promise(function(resolve, reject) {
-      RCTBraintree.getDeviceData(options, function(err, deviceData) {
+      RNBraintree.getDeviceData(options, function(err, deviceData) {
         deviceData != null ? resolve(deviceData) : reject(err);
       });
     });
