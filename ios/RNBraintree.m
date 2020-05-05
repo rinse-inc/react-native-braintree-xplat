@@ -108,27 +108,34 @@ RCT_EXPORT_METHOD(showPayPalViewController:(RCTResponseSenderBlock)callback)
     });
 }
 
-RCT_EXPORT_METHOD(getCardNonce: (NSString *)cardNumber
-                  expirationMonth: (NSString *)expirationMonth
-                  expirationYear: (NSString *)expirationYear
-                  callback: (RCTResponseSenderBlock)callback
-                  )
+RCT_EXPORT_METHOD(getCardNonce: (NSDictionary *)parameters callback: (RCTResponseSenderBlock)callback)
 {
     BTCardClient *cardClient = [[BTCardClient alloc] initWithAPIClient: self.braintreeClient];
-    BTCard *card = [[BTCard alloc] initWithNumber:cardNumber expirationMonth:expirationMonth expirationYear:expirationYear cvv:nil];
+    BTCard *card = [[BTCard alloc] initWithParameters:parameters];
+    card.shouldValidate = YES;
 
     [cardClient tokenizeCard:card
                   completion:^(BTCardNonce *tokenizedCard, NSError *error) {
+        NSArray *args = @[];
 
-                      NSArray *args = @[];
-                      if ( error == nil ) {
-                          args = @[[NSNull null], tokenizedCard.nonce];
-                      } else {
-                          args = @[error.description, [NSNull null]];
-                      }
-                      callback(args);
-                  }
-     ];
+        if ( error == nil ) {
+            args = @[[NSNull null], tokenizedCard.nonce];
+        } else {
+            NSError *serialisationErr;
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:[error userInfo]
+                                                               options:NSJSONWritingPrettyPrinted
+                                                                 error:&serialisationErr];
+
+            if (! jsonData) {
+                args = @[serialisationErr.description, [NSNull null]];
+            } else {
+                NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                args = @[jsonString, [NSNull null]];
+            }
+        }
+
+        callback(args);
+    }];
 }
 
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation {
